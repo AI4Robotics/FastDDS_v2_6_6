@@ -96,6 +96,16 @@ void MixedFlowControlSubscriber::SubListener::on_subscription_matched(
     else if (info.current_count_change == -1)
     {
         n_matched = info.total_count;
+        std::cout << "... n_matched: " << n_matched << "..." << std::endl;
+        resultOut.open(data_path_ + "receive/msg_result.csv", std::ios::trunc);
+		resultOut << "msg_priority, receive_msg_sum, trans_time_sum(ns)" << std::endl;
+        resultOut << 6 << ", " << receive_a_msg_sum << ", " << a_trans_time_sum << std::endl;
+            resultOut << 4 << ", " << receive_b_msg_sum << ", " << b_trans_time_sum << std::endl;
+            resultOut << 2 << ", " << receive_c_msg_sum << ", " << c_trans_time_sum << std::endl;
+            resultOut << 0 << ", " << receive_d_msg_sum << ", " << d_trans_time_sum << std::endl;
+            resultOut << "Total" << ", " << receive_d_msg_sum + receive_c_msg_sum + receive_b_msg_sum + receive_a_msg_sum
+            << ", " << d_trans_time_sum + c_trans_time_sum + b_trans_time_sum + a_trans_time_sum
+            << std::endl;
         std::cout << "Subscriber unmatched." << std::endl;
     }
     else
@@ -110,31 +120,54 @@ void MixedFlowControlSubscriber::SubListener::on_data_available(
 {
     SampleInfo info;
     MixedMsg st;
-    eprosima::fastrtps::Time_t now_time;
-    eprosima::fastrtps::Time_t start_time;
-    eprosima::fastrtps::Time_t during_time;
+    Time_t now_time;
+    Time_t start_time;
+    int64_t during_time;
     if (reader->take_next_sample(&st, &info) == ReturnCode_t::RETCODE_OK)
     {
         if (info.valid_data)
         {
             ++received_num;
             // 设置数据接收时间
-            eprosima::fastrtps::Time_t::now(now_time);
-            st.msg_end_seconds(now_time.seconds);
-            st.msg_end_nanosec(now_time.nanosec);
-            start_time.seconds = st.msg_start_seconds();
-            start_time.nanosec = st.msg_start_nanosec();
+            Time_t::now(now_time);
+            st.msg_end_seconds(now_time.seconds());
+            st.msg_end_nanosec(now_time.nanosec());
+            start_time.seconds(st.msg_start_seconds());
+            start_time.nanosec(st.msg_start_nanosec());
             std::cout << "$$$$$$$$ time before sending : " << start_time << "$$$$$$$$" << std::endl;
             std::cout << "$$$$$$$$ time after sending : " << now_time << "$$$$$$$$" << std::endl;
-            during_time = now_time - start_time;
+            during_time = now_time.to_ns() - start_time.to_ns();
+            /*
+                TODO: 统计接收的数据
+                    每种类型/优先级的消息接收总数，传输时间之和
+            */
+            switch (st.msg_priority())
+            {
+            case 6:
+                ++receive_a_msg_sum;
+                a_trans_time_sum = a_trans_time_sum + during_time;
+                break;
+            case 4:
+                ++receive_b_msg_sum;
+                b_trans_time_sum = b_trans_time_sum + during_time;
+                break;
+            case 2:
+                ++receive_c_msg_sum;
+                c_trans_time_sum = c_trans_time_sum + during_time;
+                break;
+            case 0:
+                ++receive_d_msg_sum;
+                d_trans_time_sum = d_trans_time_sum + during_time;
+                break;
+            default:
+                break;
+            }
 
             // Print your structure data here.
             statisticsOut << received_num << ", " << st.msg_sequence_num() << ", " << st.msg_type() 
                 << ", " << st.msg_priority() << ", " << start_time << ", " << now_time << "," << during_time << std::endl;
             std::cout << "***Sample received NO." << received_num << "\t type.msg_sequence_num: " << st.msg_type() << "." << st.msg_sequence_num() 
-                << "\t msg_priority: " << st.msg_priority() << "\t msg_trans_time: " << during_time.seconds << "." << during_time.nanosec << "s"
-                << "\t msg_trans_time: " << during_time << 
-                "***" << std::endl;
+                << "\t msg_priority: " << st.msg_priority() << "\t msg_trans_time: " << during_time << "ns ***" << std::endl;
         }
     }
 }

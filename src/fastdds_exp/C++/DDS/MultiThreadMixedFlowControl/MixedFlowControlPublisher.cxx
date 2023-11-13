@@ -75,9 +75,9 @@ bool MixedFlowControlPublisher::init()
     static const char* flow_controller_name = "example_flow_controller";
     auto flow_control_300k_per_sec = std::make_shared<eprosima::fastdds::rtps::FlowControllerDescriptor>();
     flow_control_300k_per_sec->name = flow_controller_name;
-    flow_control_300k_per_sec->scheduler = eprosima::fastdds::rtps::FlowControllerSchedulerPolicy::HIGH_PRIORITY;
+    // flow_control_300k_per_sec->scheduler = eprosima::fastdds::rtps::FlowControllerSchedulerPolicy::HIGH_PRIORITY;
     // flow_control_300k_per_sec->scheduler = eprosima::fastdds::rtps::FlowControllerSchedulerPolicy::FIFO;
-    // flow_control_300k_per_sec->scheduler = eprosima::fastdds::rtps::FlowControllerSchedulerPolicy::ROUND_ROBIN;
+    flow_control_300k_per_sec->scheduler = eprosima::fastdds::rtps::FlowControllerSchedulerPolicy::ROUND_ROBIN;
     flow_control_300k_per_sec->max_bytes_per_period = 300 * 1000;
     // flow_control_300k_per_sec->max_bytes_per_period = 1000;
     // flow_control_300k_per_sec->max_bytes_per_period = 30 * 1000;
@@ -245,8 +245,8 @@ void MixedFlowControlPublisher::run()
 	std::string a_type_name = "a", b_type_name = "b", c_type_name = "c", d_type_name = "d";
 	int a_ms_per_msg = 1, b_ms_per_msg = 2, c_ms_per_msg = 3, d_ms_per_msg = 6;
 	int a_thread_end = 0, b_thread_end = 0, c_thread_end = 0, d_thread_end = 0; 
-    eprosima::fastrtps::Time_t start_time;
-    eprosima::fastrtps::Time_t::now(start_time);
+    Time_t start_time;
+    Time_t::now(start_time);
 	std::thread th1(&MixedFlowControlPublisher::sub_thread_write, this, &a_writer_, 
 					a_priority, a_send_sum, a_type_name, a_ms_per_msg, &a_thread_end);
 	th1.detach();
@@ -263,10 +263,10 @@ void MixedFlowControlPublisher::run()
 	{
 		// 等待子线程退出
 	}
-    eprosima::fastrtps::Time_t end_time;
-    eprosima::fastrtps::Time_t::now(end_time);
+    Time_t end_time;
+    Time_t::now(end_time);
 
-	std::cout << "---------- send end, speed " << end_time - start_time << "seconds -------------" << std::endl;
+	std::cout << "---------- send end, speed " << end_time.to_ns() - start_time.to_ns() << "ns -------------" << std::endl;
 }
 
 /**
@@ -280,9 +280,9 @@ void MixedFlowControlPublisher::sub_thread_write(eprosima::fastdds::dds::DataWri
     std::ofstream statisticsOut;
     statisticsOut.open(data_path_ + "send/msg_" + type_name + "_send.csv", std::ios::trunc);
     // 待发送消息的 序号、优先级、类型、生成时间、是否失败发送
-	statisticsOut << "msg_index, msg_priority, msg_type, msg_start_time, msg_fail_send" << std::endl;
+	statisticsOut << "msg_index, msg_priority, msg_type, msg_start_time(ts), msg_fail_send" << std::endl;
     MixedMsg st;
-    eprosima::fastrtps::Time_t now_time;
+    Time_t now_time;
 
     while (index < send_sum)
     {
@@ -290,9 +290,9 @@ void MixedFlowControlPublisher::sub_thread_write(eprosima::fastdds::dds::DataWri
         st.msg_sequence_num(++index);
         st.msg_priority(priority);
         st.msg_type(type_name);
-        eprosima::fastrtps::Time_t::now(now_time);  // 设置数据生成时间
-        st.msg_start_seconds(now_time.seconds);
-        st.msg_start_nanosec(now_time.nanosec);
+        Time_t::now(now_time);  // 设置数据生成时间
+        st.msg_start_seconds(now_time.seconds());
+        st.msg_start_nanosec(now_time.nanosec());
         // 发送消息
         if ((*writer)->write(&st))
         {

@@ -46,12 +46,13 @@ private:
         {
             statisticsOut.open(data_path_ + "receive/msg_statistics.csv", std::ios::trunc);
             // 数据接收的序列号，数据发送的序列号，数据类型，数据优先级，发送时间，接收时间，传输时间
-		    statisticsOut << "receive_msg_num, send_msg_num, msg_type, msg_priority, msg_start_time, msg_end_time, msg_trans_time" << std::endl;
+		    statisticsOut << "receive_msg_num, send_msg_num, msg_type, msg_priority, msg_start_time(ts), msg_end_time(ts), msg_trans_time(ns)" << std::endl;
         }
 
         ~SubListener() override
         {
             statisticsOut.close();
+            resultOut.close();
         }
 
         void on_data_available(
@@ -65,9 +66,11 @@ private:
         int n_msg;
         int received_num = 0;
         std::ofstream statisticsOut;
+        std::ofstream resultOut;
         std::string data_path_;
+        int receive_a_msg_sum = 0, receive_b_msg_sum = 0, receive_c_msg_sum = 0, receive_d_msg_sum = 0;
+        int64_t a_trans_time_sum = 0, b_trans_time_sum = 0, c_trans_time_sum = 0, d_trans_time_sum = 0;
     } m_listener;
-
     eprosima::fastdds::dds::TypeSupport myType;    
 };
 
