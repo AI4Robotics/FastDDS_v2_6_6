@@ -110,20 +110,20 @@ void MixedFlowControlSubscriber::SubListener::on_data_available(
 {
     SampleInfo info;
     MixedMsg st;
-    Time_t now_time;
-    Time_t start_time;
-    Time_t during_time;
+    eprosima::fastrtps::Time_t now_time;
+    eprosima::fastrtps::Time_t start_time;
+    eprosima::fastrtps::Time_t during_time;
     if (reader->take_next_sample(&st, &info) == ReturnCode_t::RETCODE_OK)
     {
         if (info.valid_data)
         {
             ++received_num;
             // 设置数据接收时间
-            Time_t::now(now_time);
-            st.msg_end_seconds(now_time.seconds());
-            st.msg_end_nanosec(now_time.nanosec());
-            start_time.seconds(st.msg_start_seconds());
-            start_time.nanosec(st.msg_start_nanosec());
+            eprosima::fastrtps::Time_t::now(now_time);
+            st.msg_end_seconds(now_time.seconds);
+            st.msg_end_nanosec(now_time.nanosec);
+            start_time.seconds = st.msg_start_seconds();
+            start_time.nanosec = st.msg_start_nanosec();
             std::cout << "$$$$$$$$ time before sending : " << start_time << "$$$$$$$$" << std::endl;
             std::cout << "$$$$$$$$ time after sending : " << now_time << "$$$$$$$$" << std::endl;
             during_time = now_time - start_time;
@@ -132,7 +132,8 @@ void MixedFlowControlSubscriber::SubListener::on_data_available(
             statisticsOut << received_num << ", " << st.msg_sequence_num() << ", " << st.msg_type() 
                 << ", " << st.msg_priority() << ", " << start_time << ", " << now_time << "," << during_time << std::endl;
             std::cout << "***Sample received NO." << received_num << "\t type.msg_sequence_num: " << st.msg_type() << "." << st.msg_sequence_num() 
-                << "\t msg_priority: " << st.msg_priority() << "\t msg_trans_time: " << during_time <<
+                << "\t msg_priority: " << st.msg_priority() << "\t msg_trans_time: " << during_time.seconds << "." << during_time.nanosec << "s"
+                << "\t msg_trans_time: " << during_time << 
                 "***" << std::endl;
         }
     }
